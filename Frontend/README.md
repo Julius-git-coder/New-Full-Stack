@@ -14,3 +14,35 @@ The React Compiler is not enabled on this template because of its impact on dev 
 ## Expanding the ESLint configuration
 
 If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+
+
+
+Frontend → axios('/api/...') → Proxy → Backend http://localhost:5000/api/... → Controller → Database
+
+
+React Frontend (localhost:5173)
+        |
+        |  axios.post('/api/message')
+        v
+Vite Proxy (redirects automatically)
+        |
+        v
+Backend Server (localhost:5000/api/message)
+        |
+        v
+Response sent back to frontend
+
+
+[User interacts UI]
+        ↓
+React Component (calls userAPI → axios.post('/users', formData))
+        ↓
+Vite Dev Server (proxy sees '/api' and forwards)
+        ↓
+Backend Server (Express) at http://localhost:8000/api/users
+        ↓
+Controller handles file upload (multer in memory) → streams to Cloudinary
+        ↓
+Mongoose writes user record to MongoDB Atlas
+        ↓
+Controller responds JSON → axios receives → React updates state → UI re-renders
