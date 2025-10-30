@@ -1,10 +1,17 @@
+// Backend/controllers/userController.js (updated - exclude auth user from list)
 import UserModel from "../models/userModel.js";
 import cloudinary from "../config/cloudinary.js";
+import bcrypt from "bcryptjs";
 
-// Get all users
+// Get all users (only owner's managed users, exclude self)
 export const getAllUsers = async (req, res) => {
   try {
-    const users = await UserModel.find().sort({ createdAt: -1 });
+    const users = await UserModel.find({
+      ownerId: req.user._id,
+      _id: { $ne: req.user._id }, // Exclude the auth user themselves
+    })
+      .sort({ createdAt: -1 })
+      .select("-password");
     res.status(200).json(users);
   } catch (error) {
     res.status(500).json({
@@ -14,10 +21,13 @@ export const getAllUsers = async (req, res) => {
   }
 };
 
-// Get single user by ID
+// Get single user by ID (only if owned by req.user, allow self if needed)
 export const getUserById = async (req, res) => {
   try {
-    const user = await UserModel.findById(req.params.id);
+    const user = await UserModel.findOne({
+      _id: req.params.id,
+      ownerId: req.user._id,
+    }).select("-password");
 
     if (!user) {
       return res.status(404).json({ error: "User not found" });
@@ -32,23 +42,24 @@ export const getUserById = async (req, res) => {
   }
 };
 
-// Create new user with file upload
+// Create new user (set ownerId to req.user._id - managed user)
 export const createUser = async (req, res) => {
   try {
-    const { name, email, phone, address } = req.body;
+    const { name, email, phone, address, password } = req.body;
 
-    // Validate required fields
-    if (!name || !email) {
+    if (!name || !email || !password) {
       return res.status(400).json({
-        error: "Name and email are required",
+        error: "Name, email, and password are required",
       });
     }
 
     const newUser = {
       name,
       email,
+      password, // Hashed in schema
       phone,
       address,
+      ownerId: req.user._id, // Owned by logged-in auth user (not self)
     };
 
     // If file is uploaded, upload to Cloudinary
@@ -114,11 +125,14 @@ export const createUser = async (req, res) => {
   }
 };
 
-// Update user
+// Update user (only if owned by req.user)
 export const updateUser = async (req, res) => {
   try {
-    const { name, email, phone, address } = req.body;
-    const user = await UserModel.findById(req.params.id);
+    const { name, email, phone, address, password } = req.body;
+    const user = await UserModel.findOne({
+      _id: req.params.id,
+      ownerId: req.user._id,
+    });
 
     if (!user) {
       return res.status(404).json({ error: "User not found" });
@@ -129,6 +143,11 @@ export const updateUser = async (req, res) => {
     user.email = email || user.email;
     user.phone = phone || user.phone;
     user.address = address || user.address;
+
+    // Update password if provided
+    if (password) {
+      user.password = await bcrypt.hash(password, 10);
+    }
 
     // If new file is uploaded
     if (req.file) {
@@ -177,7 +196,13 @@ export const updateUser = async (req, res) => {
 
     res.status(200).json({
       message: "User updated successfully",
-      user,
+      user: user.toObject({
+        versionKey: false,
+        transform: (doc, ret) => {
+          delete ret.password;
+          return ret;
+        },
+      }),
     });
   } catch (error) {
     res.status(400).json({
@@ -187,10 +212,13 @@ export const updateUser = async (req, res) => {
   }
 };
 
-// Delete user
+// Delete user (only if owned by req.user)
 export const deleteUser = async (req, res) => {
   try {
-    const user = await UserModel.findById(req.params.id);
+    const user = await UserModel.findOne({
+      _id: req.params.id,
+      ownerId: req.user._id,
+    });
 
     if (!user) {
       return res.status(404).json({ error: "User not found" });
@@ -219,10 +247,13 @@ export const deleteUser = async (req, res) => {
   }
 };
 
-// Download/view user's file
+// Download/view user's file (only if owned by req.user)
 export const downloadFile = async (req, res) => {
   try {
-    const user = await UserModel.findById(req.params.id);
+    const user = await UserModel.findOne({
+      _id: req.params.id,
+      ownerId: req.user._id,
+    });
 
     if (!user) {
       return res.status(404).json({ error: "User not found" });

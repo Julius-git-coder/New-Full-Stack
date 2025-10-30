@@ -1,3 +1,4 @@
+
 import express from "express";
 import {
   getAllUsers,
@@ -8,8 +9,12 @@ import {
   downloadFile,
 } from "../controllers/userController.js";
 import upload from "../middleware/uploadMiddleware.js";
+import verifyToken from "../middleware/authMiddleware.js"; // Add this
 
 const router = express.Router();
+
+// Protect all routes
+router.use(verifyToken);
 
 // Get all users
 router.get("/users", getAllUsers);

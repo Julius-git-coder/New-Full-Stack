@@ -1,11 +1,21 @@
 import { useState, useEffect } from "react";
-import { Upload, X, User, Mail, Phone, MapPin, Image } from "lucide-react";
+import {
+  Upload,
+  X,
+  User,
+  Mail,
+  Phone,
+  MapPin,
+  Image,
+  Lock,
+} from "lucide-react";
 import { userAPI } from "../services/api";
 
 export default function UserForm({ onUserCreated, editingUser, onCancelEdit }) {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
+    password: "", // Added for create
     phone: "",
     address: "",
   });
@@ -19,6 +29,7 @@ export default function UserForm({ onUserCreated, editingUser, onCancelEdit }) {
       setFormData({
         name: editingUser.name || "",
         email: editingUser.email || "",
+        password: "", // Empty for edit (optional)
         phone: editingUser.phone || "",
         address: editingUser.address || "",
       });
@@ -88,6 +99,7 @@ export default function UserForm({ onUserCreated, editingUser, onCancelEdit }) {
     setFormData({
       name: "",
       email: "",
+      password: "", // Reset password
       phone: "",
       address: "",
     });
@@ -103,12 +115,21 @@ export default function UserForm({ onUserCreated, editingUser, onCancelEdit }) {
       return;
     }
 
+    // For create, require password
+    if (!editingUser && !formData.password) {
+      alert("Please fill in password for new user");
+      return;
+    }
+
     setLoading(true);
 
     try {
       const submitData = new FormData();
       submitData.append("name", formData.name);
       submitData.append("email", formData.email);
+      if (formData.password) {
+        submitData.append("password", formData.password); // Append if present (required for create)
+      }
       submitData.append("phone", formData.phone);
       submitData.append("address", formData.address);
 
@@ -191,6 +212,32 @@ export default function UserForm({ onUserCreated, editingUser, onCancelEdit }) {
                 required
               />
             </div>
+          </div>
+
+          {/* Password - New Field */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Password {!editingUser && <span className="text-red-500">*</span>}
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Lock className="h-5 w-5 text-gray-400" />
+              </div>
+              <input
+                type="password"
+                name="password"
+                value={formData.password}
+                onChange={handleInputChange}
+                placeholder="Enter password (min 6 chars)"
+                className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                required={!editingUser}
+              />
+            </div>
+            <p className="text-xs text-gray-500 mt-1">
+              {editingUser
+                ? "Leave blank to keep current password"
+                : "Minimum 6 characters"}
+            </p>
           </div>
 
           {/* Phone */}
