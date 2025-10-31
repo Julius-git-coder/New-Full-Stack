@@ -46,3 +46,17 @@ Controller handles file upload (multer in memory) → streams to Cloudinary
 Mongoose writes user record to MongoDB Atlas
         ↓
 Controller responds JSON → axios receives → React updates state → UI re-renders
+
+
+
+
+| Component              | Purpose                                                                         | When You Need It                              |
+| ---------------------- | ------------------------------------------------------------------------------- | --------------------------------------------- |
+| **server.js / app.js** | Starts Express server, connects to DB                                           | Always                                        |
+| **routes/**            | Defines all endpoint paths                                                      | Always                                        |
+| **controllers/**       | Holds logic for each route (like registerUser, loginUser)                       | Always                                        |
+| **models/**            | Defines database schemas (e.g., User, Post)                                     | If you use a database                         |
+| **middleware/**        | For reusable logic that runs before controllers (auth checks, validation, etc.) | When routes need protection or pre-processing |
+| **utils/**             | For helper functions (JWT generation, hashing, email sending)                   | When needed                                   |
+| **config/**            | For database and environment setup                                              | Always                                        |
+| **.env**               | Stores environment variables like DB URI, JWT secret                            | Always                                        |
